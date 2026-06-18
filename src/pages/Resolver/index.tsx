@@ -11,7 +11,11 @@ import {
   Loader2,
   MessageCircleQuestion,
   CheckCircle2,
+  Printer,
+  BookmarkPlus,
 } from 'lucide-react'
+import { useCarryStore } from '../../store/carryStore'
+import { useHistoryStore } from '../../store/historyStore'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -161,6 +165,7 @@ function PasosAccordion({ pasos }: { pasos: string[] }) {
 export default function ResolverPage() {
   const navigate = useNavigate()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const addHistory = useHistoryStore((s) => s.add)
 
   const [enunciado, setEnunciado] = useState('')
   const [loading, setLoading] = useState(false)
@@ -169,6 +174,7 @@ export default function ResolverPage() {
   const [clarifyContext, setClarifyContext] = useState<ClarifyContext[]>([])
   const [clarifyAnswers, setClarifyAnswers] = useState<string[]>([])
   const [awaitingClarify, setAwaitingClarify] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   // Auto-resize textarea
   function handleTextareaInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -252,8 +258,34 @@ export default function ResolverPage() {
   function goToCalculator() {
     if (!result || result.tipo === 'desconocido') return
     const base = CALC_ROUTES[result.tipo]
+    // Preload carryStore so the calculator auto-fills the fields
+    const d = result.datos
+    useCarryStore.getState().set({
+      amount: d.P ?? d.PV ?? d.monto ?? undefined,
+      rate: d.i ?? d.tasa ?? undefined,
+      periods: d.n ?? undefined,
+      from: '/resolver',
+    })
     const params = result.params_url?.startsWith('?') ? result.params_url : ''
     navigate(`${base}${params}`)
+  }
+
+  function saveToHistory() {
+    if (!result) return
+    addHistory({
+      module: CALC_LABELS[result.tipo] ?? 'Resolver',
+      label: result.resumen ?? enunciado.slice(0, 60),
+      inputs: { enunciado: enunciado.slice(0, 100) },
+      result: result.resultado_final
+        ? { resultado: result.resultado_final, incognita: result.incognita }
+        : {},
+    })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  function exportPDF() {
+    window.print()
   }
 
   const canGoToCalc = result && result.tipo !== 'desconocido' && result.confianza >= 0.5
@@ -430,6 +462,32 @@ export default function ResolverPage() {
               >
                 <RotateCcw size={11} />
                 Nuevo
+              </button>
+              <button
+                onClick={saveToHistory}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  background: saved ? 'var(--accent-bg)' : 'transparent',
+                  border: `1px solid ${saved ? 'var(--accent-border)' : 'var(--border)'}`,
+                  color: saved ? 'var(--accent)' : 'var(--muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                <BookmarkPlus size={11} />
+                {saved ? 'Guardado' : 'Guardar'}
+              </button>
+              <button
+                onClick={exportPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all no-print"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  color: 'var(--muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                <Printer size={11} />
+                PDF
               </button>
               {canGoToCalc && (
                 <button

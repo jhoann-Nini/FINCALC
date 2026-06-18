@@ -12,6 +12,12 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Zap,
+  Timer,
+  GitCompare,
+  History,
+  Activity,
+  LineChart,
 } from 'lucide-react'
 import { useTheme } from '../../hooks/useTheme'
 import Chatbot from '../ui/Chatbot'
@@ -33,11 +39,24 @@ const NAV = [
       { to: '/anualidades', label: 'Anualidades', icon: Sigma },
       { to: '/amortizacion', label: 'Amortización', icon: Table2 },
       { to: '/inflacion', label: 'Inflación & Tasas Reales', icon: ArrowUpRight },
+      { to: '/vpntir', label: 'VPN / TIR', icon: LineChart },
     ],
   },
   {
-    group: 'Aprender',
-    items: [{ to: '/wiki', label: 'Wiki de Conceptos', icon: BookOpen }],
+    group: 'Practicar',
+    items: [
+      { to: '/practica', label: 'Modo Práctica', icon: Zap },
+      { to: '/examen', label: 'Modo Examen', icon: Timer },
+      { to: '/comparador', label: 'Comparador', icon: GitCompare },
+    ],
+  },
+  {
+    group: 'Recursos',
+    items: [
+      { to: '/wiki', label: 'Wiki de Conceptos', icon: BookOpen },
+      { to: '/historial', label: 'Historial', icon: History },
+      { to: '/dashboard', label: 'Mi Progreso', icon: Activity },
+    ],
   },
 ]
 

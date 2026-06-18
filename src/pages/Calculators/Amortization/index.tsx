@@ -23,6 +23,7 @@ import {
 } from '../../../lib/financial'
 import { fmtCOP, fmtPct, fmtNumber } from '../../../utils/format'
 import type { AmortResult } from '../../../types/finance.types'
+import { useHistoryStore } from '../../../store/historyStore'
 
 // ─── Tipos de tasa que puede ingresar el usuario ──────────────────────────────
 const RATE_TYPES = [
@@ -67,6 +68,7 @@ function runCalc(system: string, P: number, monthlyPct: number, n: number): Amor
 const money0 = (v: number) => `$ ${fmtNumber(v, 0, 0)}`
 
 export default function AmortizationPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('experto')
   const [system, setSystem] = useState('fixed-payment')
   const [rateType, setRateType] = useState('em')
@@ -123,7 +125,14 @@ export default function AmortizationPage() {
     try {
       const { monthly, convMsg: cm } = toMonthlyEffective(iVal, rateType)
       setConvMsg(cm)
-      setResult(runCalc(system, pVal, monthly, nVal))
+      const r = runCalc(system, pVal, monthly, nVal)
+      setResult(r)
+      addHistory({
+        module: 'Amortización',
+        label: `${system === 'fixed-payment' ? 'Francés' : 'Alemán'} — ${fmtCOP(pVal)}, ${fmtPct(monthly, 4)}/mes, ${nVal} cuotas`,
+        inputs: { P: pVal, i: monthly, n: nVal, sistema: system },
+        result: { cuota: r.payment, total_pagado: r.totalPaid, total_intereses: r.totalInterest },
+      })
     } catch (e: any) {
       setError(e.message)
     }

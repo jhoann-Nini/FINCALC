@@ -30,6 +30,7 @@ import {
 } from '../../../lib/rateConversion'
 import { fmtPct, fmtPctShort } from '../../../utils/format'
 import type { RateConversionResult, CapFreq } from '../../../types/finance.types'
+import { useHistoryStore } from '../../../store/historyStore'
 
 const CONVERSIONS = [
   { value: 'EA-NOM', label: 'EA → Nominal' },
@@ -118,6 +119,7 @@ const FREQ_CHOICES: BigChoiceOption[] = [
 ]
 
 export default function RateConversionPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [conv, setConv] = useState('EA-NOM')
   const [inputVal, setInputVal] = useState('24')
@@ -157,7 +159,14 @@ export default function RateConversionPage() {
   function calculate() {
     setError('')
     try {
-      setResult(runConv(conv, +inputVal, +freq as CapFreq))
+      const r = runConv(conv, +inputVal, +freq as CapFreq)
+      setResult(r)
+      addHistory({
+        module: 'Conversión de Tasas',
+        label: `${conv}: ${fmtPct(+inputVal, 4)} → EA ${fmtPct(r.EA * 100, 4)}`,
+        inputs: { conversion: conv, tasa: +inputVal, frecuencia: +freq },
+        result: { EA: r.EA, outputPct: r.outputPct },
+      })
     } catch (e: any) {
       setError(e.message)
     }
