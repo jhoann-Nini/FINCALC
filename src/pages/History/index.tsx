@@ -4,33 +4,24 @@ import { useHistoryStore } from '../../store/historyStore'
 import { PageHeader } from '../../components/ui'
 import { Trash2, RotateCcw, Clock, Filter } from 'lucide-react'
 
-const MODULE_LABELS: Record<string, string> = {
-  simple:       'Interés Simple',
-  compuesto:    'Interés Compuesto',
-  tasas:        'Conversión de Tasas',
-  amortizacion: 'Amortización',
-  anualidades:  'Anualidades',
-  inflacion:    'Inflación & Tasas Reales',
-  vpn:          'VPN',
-  tir:          'TIR',
-}
-
 const MODULE_ROUTES: Record<string, string> = {
-  simple:       '/simple',
-  compuesto:    '/compuesto',
-  tasas:        '/tasas',
-  amortizacion: '/amortizacion',
-  anualidades:  '/anualidades',
-  inflacion:    '/inflacion',
+  'Interés Simple':           '/simple',
+  'Interés Compuesto':        '/compuesto',
+  'Conversión de Tasas':      '/tasas',
+  'Amortización':             '/amortizacion',
+  'Anualidades':              '/anualidades',
+  'Inflación & Tasas Reales': '/inflacion',
+  'VPN / TIR':                '/vpntir',
 }
 
 const MODULE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  simple:       { bg: 'var(--accent-bg)',      color: 'var(--accent)',      border: 'var(--accent-border)' },
-  compuesto:    { bg: 'var(--blue-bg)',         color: 'var(--blue)',        border: 'var(--blue-border)' },
-  tasas:        { bg: 'var(--gold-bg)',         color: 'var(--gold)',        border: 'var(--gold-border)' },
-  amortizacion: { bg: 'var(--destructive-bg)', color: 'var(--destructive)', border: 'var(--destructive-border)' },
-  anualidades:  { bg: 'var(--accent-bg)',      color: 'var(--accent)',      border: 'var(--accent-border)' },
-  inflacion:    { bg: 'var(--gold-bg)',         color: 'var(--gold)',        border: 'var(--gold-border)' },
+  'Interés Simple':           { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Interés Compuesto':        { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'Conversión de Tasas':      { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Amortización':             { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'Anualidades':              { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Inflación & Tasas Reales': { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'VPN / TIR':                { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
 }
 
 function timeAgo(ts: number): string {
@@ -46,22 +37,22 @@ function timeAgo(ts: number): string {
 }
 
 function extractMainResult(result: Record<string, number | string>): { key: string; val: string } | null {
-  const priority = ['F', 'P', 'payment', 'PV', 'FV', 'PMT', 'realRatePct', 'outputPct', 'realRate']
+  const priority = ['F', 'VPN', 'FV', 'PV', 'PMT', 'cuota', 'tasa_real', 'EA', 'P']
   const labels: Record<string, string> = {
-    F:           'F',
-    P:           'P',
-    payment:     'Cuota',
-    PV:          'PV',
-    FV:          'FV',
-    PMT:         'PMT',
-    realRatePct: 'Tasa real',
-    outputPct:   'Tasa',
-    realRate:    'Tasa real',
+    F:          'F',
+    VPN:        'VPN',
+    FV:         'FV',
+    PV:         'PV',
+    PMT:        'PMT',
+    cuota:      'Cuota',
+    tasa_real:  'Tasa real',
+    EA:         'Tasa EA',
+    P:          'P',
   }
   for (const key of priority) {
     if (result[key] != null) {
       const v = result[key]
-      const isRate = key.toLowerCase().includes('rate') || key.toLowerCase().includes('pct')
+      const isRate = key.toLowerCase().includes('rate') || key.toLowerCase().includes('pct') || key === 'EA' || key === 'tasa_real'
       const val = typeof v === 'number'
         ? isRate
           ? `${v.toFixed(4)}%`
@@ -78,8 +69,8 @@ export default function HistoryPage() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<string>('todos')
 
-  const modules = ['todos', ...Array.from(new Set(entries.map(e => e.module))).filter(Boolean)]
-  const filtered = filter === 'todos' ? entries : entries.filter(e => e.module === filter)
+  const modules = ['todos', ...Array.from(new Set(entries.map((e) => e.module))).filter(Boolean)]
+  const filtered = filter === 'todos' ? entries : entries.filter((e) => e.module === filter)
 
   if (entries.length === 0) {
     return (
@@ -120,10 +111,9 @@ export default function HistoryPage() {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        {/* Filtro por módulo */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <Filter size={12} style={{ color: 'var(--muted)' }} />
-          {modules.map(m => (
+          {modules.map((m) => (
             <button
               key={m}
               onClick={() => setFilter(m)}
@@ -135,12 +125,11 @@ export default function HistoryPage() {
                 cursor: 'pointer',
               }}
             >
-              {m === 'todos' ? 'Todos' : (MODULE_LABELS[m] ?? m)}
+              {m === 'todos' ? 'Todos' : m}
             </button>
           ))}
         </div>
 
-        {/* Limpiar */}
         <button
           onClick={() => { if (confirm('¿Eliminar todo el historial?')) clear() }}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
@@ -154,48 +143,41 @@ export default function HistoryPage() {
       {/* Lista */}
       {filtered.length === 0 ? (
         <p className="text-sm text-center py-12" style={{ color: 'var(--muted)' }}>
-          No hay cálculos de {MODULE_LABELS[filter] ?? filter} todavía.
+          No hay cálculos de {filter} todavía.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((entry) => {
             const mainResult = extractMainResult(entry.result)
-            const colors = MODULE_COLORS[entry.module] ?? MODULE_COLORS['simple']
+            const colors = MODULE_COLORS[entry.module] ?? MODULE_COLORS['Interés Simple']
 
             return (
               <div key={entry.id} className="card p-4 flex items-start gap-4">
-                {/* Info principal */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Badge + tiempo */}
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span
                       className="text-xs font-semibold px-2 py-0.5 rounded-full"
                       style={{
                         background: colors.bg,
-                        color: colors.color,
-                        border: `1px solid ${colors.border}`,
+                        color:      colors.color,
+                        border:     `1px solid ${colors.border}`,
                       }}
                     >
-                      {MODULE_LABELS[entry.module] ?? entry.module}
+                      {entry.module}
                     </span>
                     <span className="text-xs" style={{ color: 'var(--muted)' }}>
                       {timeAgo(entry.timestamp)}
                     </span>
                   </div>
 
-                  {/* Label del cálculo */}
                   {entry.label && (
                     <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
                       {entry.label}
                     </p>
                   )}
 
-                  {/* Resultado principal */}
                   {mainResult && (
-                    <p
-                      className="result-number"
-                      style={{ color: 'var(--text)', fontSize: '1.2rem', margin: '2px 0' }}
-                    >
+                    <p className="result-number" style={{ color: 'var(--text)', fontSize: '1.2rem', margin: '2px 0' }}>
                       <span
                         className="text-xs font-normal"
                         style={{ color: 'var(--muted)', fontFamily: 'JetBrains Mono', fontSize: 10 }}
@@ -206,7 +188,6 @@ export default function HistoryPage() {
                     </p>
                   )}
 
-                  {/* Inputs resumidos */}
                   {entry.inputs && Object.keys(entry.inputs).length > 0 && (
                     <p
                       className="text-xs mt-1.5"
@@ -220,7 +201,6 @@ export default function HistoryPage() {
                   )}
                 </div>
 
-                {/* Acciones */}
                 <div className="flex gap-2 flex-shrink-0">
                   {MODULE_ROUTES[entry.module] && (
                     <button
