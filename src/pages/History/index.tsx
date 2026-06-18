@@ -1,207 +1,240 @@
 import { useState } from 'react'
-import { Trash2, Clock, BookOpen, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useHistoryStore } from '../../store/historyStore'
 import { PageHeader } from '../../components/ui'
-import type { HistoryEntry } from '../../types/finance.types'
+import { Trash2, RotateCcw, Clock, Filter } from 'lucide-react'
+
+const MODULE_ROUTES: Record<string, string> = {
+  'Interés Simple':           '/simple',
+  'Interés Compuesto':        '/compuesto',
+  'Conversión de Tasas':      '/tasas',
+  'Amortización':             '/amortizacion',
+  'Anualidades':              '/anualidades',
+  'Inflación & Tasas Reales': '/inflacion',
+  'VPN / TIR':                '/vpntir',
+}
+
+const MODULE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+  'Interés Simple':           { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Interés Compuesto':        { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'Conversión de Tasas':      { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Amortización':             { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'Anualidades':              { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+  'Inflación & Tasas Reales': { bg: 'var(--gold-bg)',    color: 'var(--gold)',         border: 'var(--gold-border)' },
+  'VPN / TIR':                { bg: 'var(--accent-bg)',  color: 'var(--accent)',      border: 'var(--accent-border)' },
+}
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts
   const m = Math.floor(diff / 60000)
+  if (m < 1)  return 'Ahora mismo'
+  if (m < 60) return `Hace ${m} min`
   const h = Math.floor(m / 60)
+  if (h < 24) return `Hace ${h}h`
   const d = Math.floor(h / 24)
-  if (d > 0) return `Hace ${d} día${d > 1 ? 's' : ''}`
-  if (h > 0) return `Hace ${h} hora${h > 1 ? 's' : ''}`
-  if (m > 0) return `Hace ${m} min`
-  return 'Ahora mismo'
+  if (d < 7)  return `Hace ${d}d`
+  return new Date(ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
 }
 
-function EntryCard({ entry, onRemove }: { entry: HistoryEntry; onRemove: () => void }) {
-  const [open, setOpen] = useState(false)
-
-  const inputEntries = Object.entries(entry.inputs).filter(([, v]) => v !== null && v !== '')
-  const resultEntries = Object.entries(entry.result).filter(([, v]) => v !== null && v !== '')
-
-  return (
-    <div
-      className="card overflow-hidden"
-      style={{ borderLeft: '3px solid var(--accent)' }}
-    >
-      <div
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer"
-        onClick={() => setOpen((o) => !o)}
-        style={{ userSelect: 'none' }}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
-              style={{
-                background: 'var(--accent-bg)',
-                border: '1px solid var(--accent-border)',
-                color: 'var(--accent)',
-              }}
-            >
-              {entry.module}
-            </span>
-          </div>
-          <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
-            {entry.label}
-          </p>
-          <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--muted)' }}>
-            <Clock size={10} />
-            {timeAgo(entry.timestamp)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove() }}
-            className="p-1.5 rounded-lg transition-all"
-            style={{ color: 'var(--muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}
-            title="Eliminar"
-          >
-            <Trash2 size={13} />
-          </button>
-          {open ? <ChevronUp size={14} style={{ color: 'var(--muted)' }} /> : <ChevronDown size={14} style={{ color: 'var(--muted)' }} />}
-        </div>
-      </div>
-
-      {open && (
-        <div
-          className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4"
-          style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}
-        >
-          {inputEntries.length > 0 && (
-            <div>
-              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--muted)', fontFamily: 'JetBrains Mono' }}>
-                Datos de entrada
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {inputEntries.map(([k, v]) => (
-                  <div key={k} className="flex justify-between text-xs">
-                    <span style={{ color: 'var(--muted)' }}>{k}</span>
-                    <span className="mono font-medium" style={{ color: 'var(--text)' }}>{String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {resultEntries.length > 0 && (
-            <div>
-              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono' }}>
-                Resultado
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {resultEntries.map(([k, v]) => (
-                  <div key={k} className="flex justify-between text-xs">
-                    <span style={{ color: 'var(--muted)' }}>{k}</span>
-                    <span className="mono font-semibold" style={{ color: 'var(--accent)' }}>{String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
+function extractMainResult(result: Record<string, number | string>): { key: string; val: string } | null {
+  const priority = ['F', 'VPN', 'FV', 'PV', 'PMT', 'cuota', 'tasa_real', 'EA', 'P']
+  const labels: Record<string, string> = {
+    F:          'F',
+    VPN:        'VPN',
+    FV:         'FV',
+    PV:         'PV',
+    PMT:        'PMT',
+    cuota:      'Cuota',
+    tasa_real:  'Tasa real',
+    EA:         'Tasa EA',
+    P:          'P',
+  }
+  for (const key of priority) {
+    if (result[key] != null) {
+      const v = result[key]
+      const isRate = key.toLowerCase().includes('rate') || key.toLowerCase().includes('pct') || key === 'EA' || key === 'tasa_real'
+      const val = typeof v === 'number'
+        ? isRate
+          ? `${v.toFixed(4)}%`
+          : `$${Math.round(v).toLocaleString('es-CO')}`
+        : String(v)
+      return { key: labels[key] ?? key, val }
+    }
+  }
+  return null
 }
 
 export default function HistoryPage() {
   const { entries, remove, clear } = useHistoryStore()
+  const navigate = useNavigate()
+  const [filter, setFilter] = useState<string>('todos')
 
-  const modules = [...new Set(entries.map((e) => e.module))]
-  const [filter, setFilter] = useState<string>('Todos')
+  const modules = ['todos', ...Array.from(new Set(entries.map((e) => e.module))).filter(Boolean)]
+  const filtered = filter === 'todos' ? entries : entries.filter((e) => e.module === filter)
 
-  const filtered = filter === 'Todos' ? entries : entries.filter((e) => e.module === filter)
+  if (entries.length === 0) {
+    return (
+      <div className="p-6 lg:p-12 max-w-2xl mx-auto">
+        <PageHeader
+          chip="Historial"
+          title="Tus cálculos"
+          description="Los resultados de cada calculadora se guardan aquí automáticamente."
+        />
+        <div
+          className="rounded-xl flex flex-col items-center justify-center py-20 mt-8"
+          style={{ border: '1px dashed var(--border)', color: 'var(--muted)' }}
+        >
+          <Clock size={32} strokeWidth={1.25} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <p className="text-sm">Aún no hay cálculos guardados.</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+            Usá cualquier calculadora y el resultado aparecerá aquí.
+          </p>
+          <button
+            className="btn-primary mt-6"
+            style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
+            onClick={() => navigate('/tasas')}
+          >
+            Ir a calculadoras →
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 lg:p-10 max-w-2xl mx-auto">
+    <div className="p-6 lg:p-12 max-w-2xl mx-auto">
       <PageHeader
         chip="Historial"
-        title="Mis Ejercicios"
-        description="Todos los cálculos que has realizado en la app, guardados automáticamente para que puedas revisarlos después."
+        title="Tus cálculos"
+        description={`${entries.length} cálculo${entries.length !== 1 ? 's' : ''} guardado${entries.length !== 1 ? 's' : ''} en este dispositivo.`}
       />
 
-      {entries.length === 0 ? (
-        <div
-          className="card p-10 flex flex-col items-center gap-4 text-center"
-        >
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}
-          >
-            <BookOpen size={24} style={{ color: 'var(--accent)' }} />
-          </div>
-          <div>
-            <p className="font-semibold mb-1" style={{ color: 'var(--text)' }}>
-              No hay ejercicios guardados
-            </p>
-            <p className="text-sm" style={{ color: 'var(--muted)' }}>
-              Resuelve un cálculo en cualquier calculadora o en el Resolver con IA para verlos aquí.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Filters + clear button */}
-          <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-            <div className="flex gap-2 flex-wrap">
-              {['Todos', ...modules].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setFilter(m)}
-                  className="text-xs px-3 py-1.5 rounded-full transition-all cursor-pointer"
-                  style={
-                    filter === m
-                      ? { background: 'var(--accent)', color: '#fff', border: 'none' }
-                      : { background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }
-                  }
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Filter size={12} style={{ color: 'var(--muted)' }} />
+          {modules.map((m) => (
             <button
-              onClick={clear}
-              className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+              key={m}
+              onClick={() => setFilter(m)}
+              className="text-xs px-2.5 py-1 rounded-full transition-all"
               style={{
-                background: 'var(--destructive-bg)',
-                border: '1px solid var(--destructive-border)',
-                color: 'var(--destructive)',
+                background: filter === m ? 'var(--accent-bg)' : 'transparent',
+                color:      filter === m ? 'var(--accent)' : 'var(--muted)',
+                border:     filter === m ? '1px solid var(--accent-border)' : '1px solid var(--border)',
+                cursor: 'pointer',
               }}
             >
-              <RotateCcw size={11} />
-              Limpiar todo
+              {m === 'todos' ? 'Todos' : m}
             </button>
-          </div>
+          ))}
+        </div>
 
-          {/* Stats bar */}
-          <div
-            className="rounded-xl p-3 mb-5 flex items-center gap-4 flex-wrap"
-            style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold mono" style={{ color: 'var(--accent)' }}>{entries.length}</span>
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>ejercicios</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold mono" style={{ color: 'var(--text)' }}>{modules.length}</span>
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>módulos</span>
-            </div>
-          </div>
+        <button
+          onClick={() => { if (confirm('¿Eliminar todo el historial?')) clear() }}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
+          style={{ color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer' }}
+        >
+          <Trash2 size={11} strokeWidth={1.75} />
+          Limpiar todo
+        </button>
+      </div>
 
-          {/* Entry list */}
-          <div className="flex flex-col gap-3">
-            {filtered.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} onRemove={() => remove(entry.id)} />
-            ))}
-            {filtered.length === 0 && (
-              <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>
-                No hay ejercicios para este módulo.
-              </p>
-            )}
-          </div>
-        </>
+      {/* Lista */}
+      {filtered.length === 0 ? (
+        <p className="text-sm text-center py-12" style={{ color: 'var(--muted)' }}>
+          No hay cálculos de {filter} todavía.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {filtered.map((entry) => {
+            const mainResult = extractMainResult(entry.result)
+            const colors = MODULE_COLORS[entry.module] ?? MODULE_COLORS['Interés Simple']
+
+            return (
+              <div key={entry.id} className="card p-4 flex items-start gap-4">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: colors.bg,
+                        color:      colors.color,
+                        border:     `1px solid ${colors.border}`,
+                      }}
+                    >
+                      {entry.module}
+                    </span>
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                      {timeAgo(entry.timestamp)}
+                    </span>
+                  </div>
+
+                  {entry.label && (
+                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
+                      {entry.label}
+                    </p>
+                  )}
+
+                  {mainResult && (
+                    <p className="result-number" style={{ color: 'var(--text)', fontSize: '1.2rem', margin: '2px 0' }}>
+                      <span
+                        className="text-xs font-normal"
+                        style={{ color: 'var(--muted)', fontFamily: 'JetBrains Mono', fontSize: 10 }}
+                      >
+                        {mainResult.key} ={' '}
+                      </span>
+                      {mainResult.val}
+                    </p>
+                  )}
+
+                  {entry.inputs && Object.keys(entry.inputs).length > 0 && (
+                    <p
+                      className="text-xs mt-1.5"
+                      style={{ color: 'var(--muted)', fontFamily: 'JetBrains Mono', fontSize: 10 }}
+                    >
+                      {Object.entries(entry.inputs)
+                        .slice(0, 5)
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join(' · ')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2 flex-shrink-0">
+                  {MODULE_ROUTES[entry.module] && (
+                    <button
+                      onClick={() => navigate(MODULE_ROUTES[entry.module])}
+                      title="Abrir calculadora"
+                      className="p-2 rounded-lg transition-all"
+                      style={{
+                        color: 'var(--accent)',
+                        border: '1px solid var(--accent-border)',
+                        background: 'var(--accent-bg)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <RotateCcw size={14} strokeWidth={1.75} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => remove(entry.id)}
+                    title="Eliminar"
+                    className="p-2 rounded-lg transition-all"
+                    style={{
+                      color: 'var(--muted)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Trash2 size={14} strokeWidth={1.75} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
