@@ -22,6 +22,7 @@ import {
   type UiMode,
   type BigChoiceOption,
 } from '../../../components/ui'
+import { useHistoryStore } from '../../../store/historyStore'
 import {
   calcCompF,
   calcCompP,
@@ -203,6 +204,7 @@ const SLIDER: Record<
 }
 
 export default function CompoundInterestPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [mode, setMode] = useState<Mode>('F')
   const [P, setP] = useState('5000000')
@@ -267,7 +269,14 @@ export default function CompoundInterestPage() {
   function calculate() {
     setError('')
     try {
-      setResult(runCalc(mode, { P: +P, F: +F, iPct: +iPct, n: +n }))
+      const r = runCalc(mode, { P: +P, F: +F, iPct: +iPct, n: +n })
+      setResult(r)
+      addHistory({
+        module: 'Interés Compuesto',
+        label: `Calcular ${mode} — P=${fmtCOP(r.P)}, i=${fmtPct(+iPct, 2)}, n=${r.n}`,
+        inputs: { P: r.P, i: +iPct, n: r.n, mode },
+        result: { F: r.F, I: r.I },
+      })
     } catch (e: any) {
       setError(friendlyError(e.message))
     }

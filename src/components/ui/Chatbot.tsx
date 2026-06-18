@@ -1,47 +1,64 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Trash2, AlertCircle } from 'lucide-react'
+import { MessageCircle, X, Trash2, AlertCircle, ExternalLink } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useCarryStore } from '../../store/carryStore'
 
 type Role = 'user' | 'assistant'
+
+interface CalcAction {
+  tipo: string
+  label: string
+  datos: Record<string, number | null>
+}
 
 interface Message {
   id: number
   role: Role
   content: string
+  calcAction?: CalcAction
 }
 
 let msgId = 1
 const nextId = () => msgId++
 
 const QUICK_TOPICS = [
-  '📝 Resolver ejercicio',
   'Interés Simple',
   'Interés Compuesto',
-  'Tasa Nominal → EA',
-  'Anticipada vs Vencida',
+  'Conversión de Tasas',
   'Amortización',
   'Anualidades',
-  'VPN',
-  'TIR',
-  'Factor F/P',
-  'Factor P/A',
-  'Gradiente aritmético',
+  'VPN / TIR',
   'Inflación',
 ]
 
-const WELCOME = `¡Hola! 👋 Soy tu tutor de **Ingeniería Económica**.
+const WELCOME = `¡Hola! Soy tu tutor de **Ingeniería Económica**.
 
-Puedo ayudarte a:
-▸ **Resolver ejercicios** paso a paso con todos los cálculos
-▸ Explicar conceptos: interés, tasas, VPN, TIR, anualidades...
-▸ Orientarte a la calculadora correcta de la app
+Pega tu ejercicio aquí y lo resuelvo paso a paso. También puedo explicar cualquier concepto del curso.`
 
-📝 **Para resolver un ejercicio**, simplemente pégalo o escríbelo tal cual aparece en tu taller o examen. Por ejemplo:
+const CALC_LABELS: Record<string, string> = {
+  simple: 'Interés Simple',
+  compuesto: 'Interés Compuesto',
+  tasas: 'Conversión de Tasas',
+  amortizacion: 'Amortización',
+  anualidades: 'Anualidades',
+  inflacion: 'Inflación & Tasas Reales',
+}
 
-_"Blanca Elena deposita $500.000 en 5 meses, $800.000 en 7 meses y $1.000.000 en 10 meses en una cuenta al 1% mensual. Calcular el saldo al final del año."_
+const CALC_ROUTES: Record<string, string> = {
+  simple: '/simple',
+  compuesto: '/compuesto',
+  tasas: '/tasas',
+  amortizacion: '/amortizacion',
+  anualidades: '/anualidades',
+  inflacion: '/inflacion',
+}
 
-¿Con qué te ayudo hoy?`
+function looksLikeExercise(text: string): boolean {
+  return /\d/.test(text) && text.length > 35 && text.length < 800
+}
 
 export default function Chatbot() {
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     { id: 0, role: 'assistant', content: WELCOME },
@@ -60,6 +77,45 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  async function tryAutoDetect(userMsg: string, botMsgId: number) {
+    if (!looksLikeExercise(userMsg)) return
+    try {
+      const res = await fetch('/api/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enunciado: userMsg, context: [] }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (!data.tipo || data.tipo === 'desconocido' || data.confianza < 0.6) return
+      const label = CALC_LABELS[data.tipo]
+      if (!label) return
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botMsgId
+            ? { ...m, calcAction: { tipo: data.tipo, label, datos: data.datos ?? {} } }
+            : m
+        )
+      )
+    } catch {
+      // Silently ignore — auto-detect is a best-effort feature
+    }
+  }
+
+  function openCalculator(action: CalcAction) {
+    const route = CALC_ROUTES[action.tipo]
+    if (!route) return
+    const d = action.datos
+    useCarryStore.getState().set({
+      amount: d.P ?? d.PV ?? d.monto ?? undefined,
+      rate: d.i ?? d.tasa ?? undefined,
+      periods: d.n ?? undefined,
+      from: '/chatbot',
+    })
+    navigate(route)
+    setIsOpen(false)
+  }
+
   async function send(text?: string) {
     const q = (text ?? input).trim()
     if (!q || loading) return
@@ -71,8 +127,6 @@ export default function Chatbot() {
     setMessages(allMsgs)
     setLoading(true)
 
-    // El backend (api/chat.ts) espera history SIN el mensaje de bienvenida
-    // ni el mensaje actual (que se envía aparte como "message").
     const history = allMsgs.slice(1, -1).map((m) => ({ role: m.role, content: m.content }))
 
     try {
@@ -83,16 +137,19 @@ export default function Chatbot() {
       })
 
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string; detail?: string }
-        const msg = err.error ?? `Error HTTP ${res.status}`
-        setApiError(msg)
+        const err = (await res.json().catch(() => ({}))) as { error?: string }
+        setApiError(err.error ?? `Error HTTP ${res.status}`)
         setMessages((prev) => prev.slice(0, -1))
         return
       }
 
       const data = (await res.json()) as { reply?: string }
       const reply = data.reply ?? 'Sin respuesta. Intentá de nuevo.'
-      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: reply }])
+      const botId = nextId()
+      setMessages((prev) => [...prev, { id: botId, role: 'assistant', content: reply }])
+
+      // Auto-detect calculator in background
+      tryAutoDetect(q, botId)
     } catch {
       setApiError('Error de red. Verificá tu conexión.')
       setMessages((prev) => prev.slice(0, -1))
@@ -107,7 +164,6 @@ export default function Chatbot() {
     setApiError('')
   }
 
-  // Auto-resize textarea
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setInput(e.target.value)
     e.target.style.height = 'auto'
@@ -133,10 +189,10 @@ export default function Chatbot() {
           <div className="icon">◎</div>
           <div className="info">
             <h2>Tutor IA</h2>
-            <p>Resuelve ejercicios · Gemini</p>
+            <p>Resuelve ejercicios · Groq / Llama</p>
           </div>
           <div className="actions">
-            <button onClick={clearChat} title="Limpiar">
+            <button onClick={clearChat} title="Limpiar chat">
               <Trash2 size={14} />
             </button>
             <button onClick={() => setIsOpen(false)} title="Cerrar">
@@ -153,6 +209,15 @@ export default function Chatbot() {
                 <div className="bubble" style={{ whiteSpace: 'pre-wrap' }}>
                   {m.content}
                 </div>
+                {m.calcAction && m.role === 'assistant' && (
+                  <button
+                    onClick={() => openCalculator(m.calcAction!)}
+                    className="chatbot-calc-btn"
+                  >
+                    <ExternalLink size={11} />
+                    Abrir en {m.calcAction.label}
+                  </button>
+                )}
               </div>
             ))}
             {loading && (
@@ -179,7 +244,7 @@ export default function Chatbot() {
               <textarea
                 ref={inputRef}
                 rows={1}
-                placeholder="Pegá tu ejercicio aquí... (Enter para enviar, Shift+Enter para salto de línea)"
+                placeholder="Pega tu ejercicio aquí… (Enter para enviar)"
                 value={input}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}

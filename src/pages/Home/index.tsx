@@ -32,6 +32,12 @@ const MODULES = [
     label: 'Inflación & Tasas Reales',
     desc: 'Ecuación de Fisher. Poder adquisitivo.',
   },
+  {
+    to: '/vpntir',
+    num: '07',
+    label: 'VPN / TIR',
+    desc: 'Evalúa proyectos de inversión. Perfil del VPN y TIR.',
+  },
 ]
 
 export default function HomePage() {

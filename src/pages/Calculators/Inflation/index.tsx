@@ -21,6 +21,7 @@ import {
 import { calcRealRate, buildInflationSteps } from '../../../lib/financial'
 import { fmtCOP, fmtPct, fmtNumber, fmtPctShort } from '../../../utils/format'
 import type { InflationResult } from '../../../types/finance.types'
+import { useHistoryStore } from '../../../store/historyStore'
 import {
   LineChart,
   Line,
@@ -87,6 +88,7 @@ const SLIDER: Record<
 }
 
 export default function InflationPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [nominal, setNominal] = useState('14')
   const [inflation, setInflation] = useState('6.5')
@@ -132,7 +134,14 @@ export default function InflationPage() {
   function calculate() {
     setError('')
     try {
-      setResult(calcRealRate(+nominal, +inflation, +P, +n))
+      const r = calcRealRate(+nominal, +inflation, +P, +n)
+      setResult(r)
+      addHistory({
+        module: 'Inflación & Tasas Reales',
+        label: `Tasa real: ${fmtPct(r.realRatePct, 4)} (nominal ${nominal}%, inflación ${inflation}%)`,
+        inputs: { nominal: +nominal, inflacion: +inflation, P: +P, n: +n },
+        result: { tasa_real: r.realRatePct, FV_real: r.realFV, FV_nominal: r.nominalFV },
+      })
     } catch (e: any) {
       setError(e.message)
     }

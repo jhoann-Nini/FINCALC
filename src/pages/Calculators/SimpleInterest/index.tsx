@@ -22,6 +22,7 @@ import {
   type UiMode,
   type BigChoiceOption,
 } from '../../../components/ui'
+import { useHistoryStore } from '../../../store/historyStore'
 import {
   calcSimpleF,
   calcSimpleP,
@@ -205,6 +206,7 @@ const SLIDER: Record<
 }
 
 export default function SimpleInterestPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [mode, setMode] = useState<Mode>('F')
   const [P, setP] = useState('1000000')
@@ -270,7 +272,14 @@ export default function SimpleInterestPage() {
   function calculate() {
     setError('')
     try {
-      setResult(runCalc(mode, { P: +P, F: +F, iPct: +iPct, n: +n }))
+      const r = runCalc(mode, { P: +P, F: +F, iPct: +iPct, n: +n })
+      setResult(r)
+      addHistory({
+        module: 'Interés Simple',
+        label: `Calcular ${mode} — P=${fmtCOP(r.P)}, i=${fmtPct(r.iPct, 2)}, n=${fmtNumber(r.n, 0, 0)} ${PERIOD_N_LABEL[period]}`,
+        inputs: { P: r.P, i: r.iPct, n: r.n, mode, period },
+        result: { F: r.F, I: r.I },
+      })
     } catch (e: any) {
       setError(friendlyError(e.message))
     }

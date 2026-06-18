@@ -28,6 +28,7 @@ import {
   buildAnnuitySteps,
 } from '../../../lib/financial'
 import { fmtCOP, fmtNumber, fmtPctShort } from '../../../utils/format'
+import { useHistoryStore } from '../../../store/historyStore'
 import type { AnnuityResult } from '../../../types/finance.types'
 import {
   AreaChart,
@@ -138,6 +139,7 @@ const SLIDER: Record<
 }
 
 export default function AnnuitiesPage() {
+  const addHistory = useHistoryStore((s) => s.add)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [mode, setMode] = useState<Mode>('FV')
   const [PMT, setPMT] = useState('500000')
@@ -195,7 +197,14 @@ export default function AnnuitiesPage() {
   function calculate() {
     setError('')
     try {
-      setResult(runCalc(mode, { PMT: +PMT, PV: +PV, iPct: +iPct, n: +n }))
+      const r = runCalc(mode, { PMT: +PMT, PV: +PV, iPct: +iPct, n: +n })
+      setResult(r)
+      addHistory({
+        module: 'Anualidades',
+        label: `Calcular ${mode} — PMT=${fmtCOP(r.PMT)}, i=${+iPct}%, n=${r.n}`,
+        inputs: { PMT: r.PMT, PV: r.PV, i: +iPct, n: r.n, mode },
+        result: { FV: r.FV, PV: r.PV, totalPagado: r.totalPaid },
+      })
     } catch (e: any) {
       setError(friendlyError(e.message))
     }
