@@ -1,0 +1,5 @@
+# Shim de desarrollo local (Node http server). NO es una función de Vercel
+# (no exporta un handler por defecto). En producción, Vercel construye
+# automáticamente api/chat.ts, api/interpret.ts y api/explain.ts como
+# funciones serverless; este archivo solo se usa con `npm run dev:api`.
+api/server.ts
