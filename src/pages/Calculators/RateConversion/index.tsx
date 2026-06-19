@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   PageHeader,
   Field,
@@ -19,6 +20,7 @@ import {
   type UiMode,
   type BigChoiceOption,
 } from '../../../components/ui'
+import { useCarryStore } from '../../../store/carryStore'
 import {
   convertEAtoNominal,
   convertNominalToEA,
@@ -118,14 +120,24 @@ const FREQ_CHOICES: BigChoiceOption[] = [
   { value: '52', emoji: '📈', label: 'Semanal', desc: '52 veces al año' },
 ]
 
+const CARRY_TARGETS = [
+  { path: '/compuesto', label: 'Interés Compuesto' },
+  { path: '/simple', label: 'Interés Simple' },
+  { path: '/anualidades', label: 'Anualidades' },
+  { path: '/amortizacion', label: 'Amortización' },
+]
+
 export default function RateConversionPage() {
   const addHistory = useHistoryStore((s) => s.add)
+  const navigate = useNavigate()
+  const setCarry = useCarryStore((s) => s.set)
   const [uiMode, setUiMode] = useState<UiMode>('simple')
   const [conv, setConv] = useState('EA-NOM')
   const [inputVal, setInputVal] = useState('24')
   const [freq, setFreq] = useState('12')
   const [result, setResult] = useState<RateConversionResult | null>(null)
   const [error, setError] = useState('')
+  const [activeEq, setActiveEq] = useState<string | null>(null)
 
   // Asistente
   const [wizConv, setWizConv] = useState<string | null>(null)
@@ -223,6 +235,12 @@ export default function RateConversionPage() {
   function pickFreq(value: string) {
     if (!wizConv) return
     compute(wizConv, wizRate, +value)
+  }
+
+  function goToModule(eq: { label: string; pct: number }, path: string) {
+    setCarry({ rate: eq.pct, rateLabel: `${eq.label}: ${fmtPct(eq.pct, 4)}`, from: '/tasas' })
+    navigate(path)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function renderWizard() {
@@ -478,20 +496,53 @@ export default function RateConversionPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {result.equivalences.map((eq) => (
-                <div
-                  key={eq.label}
-                  className="rounded-xl p-3 text-center"
-                  style={{ background: 'var(--surface2)', border: '1px solid var(--border)' }}
-                >
-                  <p className="text-xs mono mb-1" style={{ color: 'var(--muted)' }}>
-                    {eq.label}
-                  </p>
-                  <p className="text-sm mono font-semibold" style={{ color: 'var(--accent)' }}>
-                    {fmtPct(eq.pct, 6)}
-                  </p>
-                </div>
-              ))}
+              {result.equivalences.map((eq) => {
+                const isActive = activeEq === eq.label
+                return (
+                  <div key={eq.label} className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setActiveEq(isActive ? null : eq.label)}
+                      className="rounded-xl p-3 text-center w-full transition-all"
+                      style={{
+                        background: isActive ? 'var(--accent-bg)' : 'var(--surface2)',
+                        border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border)'}`,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <p className="text-xs mono mb-1" style={{ color: 'var(--muted)' }}>
+                        {eq.label}
+                      </p>
+                      <p className="text-sm mono font-semibold" style={{ color: 'var(--accent)' }}>
+                        {fmtPct(eq.pct, 6)}
+                      </p>
+                      <p className="text-xs mt-1.5" style={{ color: 'var(--muted)', opacity: 0.7 }}>
+                        {isActive ? 'Elige módulo ↓' : 'Llevar a... →'}
+                      </p>
+                    </button>
+                    {isActive && (
+                      <div className="flex flex-col gap-1">
+                        {CARRY_TARGETS.map((t) => (
+                          <button
+                            key={t.path}
+                            type="button"
+                            onClick={() => goToModule(eq, t.path)}
+                            className="text-xs px-2.5 py-1.5 rounded-lg text-left transition-all"
+                            style={{
+                              background: 'var(--accent-bg)',
+                              border: '1px solid var(--accent-border)',
+                              color: 'var(--accent)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            → {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

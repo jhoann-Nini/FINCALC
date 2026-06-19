@@ -230,8 +230,11 @@ export default function SimpleInterestPage() {
     n: SLIDER.n.init,
   })
 
+  const [carriedLabel, setCarriedLabel] = useState<string | null>(null)
+
   const carried = useCarryReceive((p) => {
     setUiMode('experto')
+    if (p.rateLabel) setCarriedLabel(p.rateLabel)
     const np = p.amount != null ? String(Math.round(p.amount)) : P
     const ni = p.rate != null ? String(+p.rate.toFixed(6)) : iPct
     const nn = p.periods != null ? String(Math.round(p.periods)) : n
@@ -435,7 +438,9 @@ export default function SimpleInterestPage() {
 
       {carried && (
         <Callout color="accent">
-          📥 Trajimos los datos del módulo anterior y los calculamos por ti. Puedes ajustarlos.
+          {carriedLabel
+            ? `📥 Tasa cargada desde Conversión de Tasas: ${carriedLabel}. Ajusta los demás datos y calcula.`
+            : '📥 Trajimos los datos del módulo anterior y los calculamos por ti. Puedes ajustarlos.'}
         </Callout>
       )}
 
@@ -661,7 +666,7 @@ export default function SimpleInterestPage() {
                     labelFormatter={(l) => `${l} ${nUnit}`}
                   />
                   <Line
-                    type="linear"
+                    type="stepAfter"
                     dataKey="Monto (M)"
                     stroke="var(--chart-1)"
                     strokeWidth={2}

@@ -7,9 +7,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
-    "dev:api": "npx tsx api/server.ts",
-    "dev:full": "npx concurrently \"npm run dev:api\" \"npm run dev\"",
+    "dev": "concurrently --names \"API,VITE\" -c \"yellow,cyan\" \"tsx api/server.ts\" \"vite\"",
+    "dev:api": "tsx api/server.ts",
+    "dev:vite": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
@@ -35,6 +35,7 @@
     "@typescript-eslint/parser": "^8.60.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.3",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -43,6 +44,7 @@
     "postcss": "^8.4.41",
     "prettier": "^3.8.3",
     "tailwindcss": "^3.4.10",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.3",
     "vite": "^7.0.0"
   }
