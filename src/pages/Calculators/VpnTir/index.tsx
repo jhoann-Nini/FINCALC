@@ -192,9 +192,9 @@ export default function VpnTirPage() {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <label className="text-xs font-medium" style={{ color: 'var(--muted)', fontFamily: 'JetBrains Mono' }}>
-              TIO — Tasa de interés de oportunidad
+              K₀ / TMAR — Tasa de interés de oportunidad (costo de oportunidad)
             </label>
-            <InfoTip>La tasa mínima de rentabilidad que exiges al proyecto. Si el VPN &gt; 0 a esta tasa, el proyecto crea valor.</InfoTip>
+            <InfoTip>También llamada TMAR (Tasa Mínima Atractiva de Retorno) o K₀ (costo de oportunidad del capital). Es la rentabilidad mínima que exiges. Si el VPN &gt; 0 a esta tasa, el proyecto crea valor.</InfoTip>
           </div>
           <Field label="" value={tio} onChange={setTio} placeholder="12" unit="% E.A." />
         </div>
@@ -303,8 +303,8 @@ export default function VpnTirPage() {
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
                 {viable
-                  ? `El VPN positivo indica que el proyecto supera la TIO del ${result.tio}% y crea valor.`
-                  : `El VPN negativo indica que el proyecto no alcanza la TIO exigida del ${result.tio}%.`}
+                  ? `El VPN positivo indica que el proyecto supera el K₀ / TMAR del ${result.tio}% y crea valor.`
+                  : `El VPN negativo indica que el proyecto no alcanza el K₀ / TMAR exigido del ${result.tio}%.`}
               </p>
             </div>
           </div>
@@ -320,7 +320,7 @@ export default function VpnTirPage() {
                 <p className="text-xs uppercase tracking-widest mono" style={{ color: viable ? 'var(--accent)' : 'var(--muted)' }}>
                   VPN
                 </p>
-                <InfoTip>Valor Presente Neto: suma de los flujos descontados a la TIO. Si VPN &gt; 0, el proyecto es rentable.</InfoTip>
+                <InfoTip>Valor Presente Neto: suma de los flujos descontados al K₀ / TMAR. Si VPN &gt; 0, el proyecto es rentable.</InfoTip>
               </div>
               <p className="result-number text-2xl" style={{ color: viable ? 'var(--accent)' : 'var(--destructive)' }}>
                 {fmtCOP(result.vpn)}
@@ -336,7 +336,7 @@ export default function VpnTirPage() {
                 <p className="text-xs uppercase tracking-widest mono" style={{ color: 'var(--muted)' }}>
                   TIR
                 </p>
-                <InfoTip>Tasa Interna de Retorno: tasa que hace VPN = 0. Si TIR &gt; TIO, el proyecto es viable.</InfoTip>
+                <InfoTip>Tasa Interna de Retorno: tasa que hace VPN = 0. Si TIR &gt; K₀ / TMAR, el proyecto es viable.</InfoTip>
               </div>
               {result.tir !== null ? (
                 <>
@@ -347,7 +347,7 @@ export default function VpnTirPage() {
                     {fmtPct(result.tir, 2)}
                   </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                    {result.tir > result.tio ? `TIR > TIO (${result.tio}%) ✓` : `TIR < TIO (${result.tio}%) ✗`}
+                    {result.tir > result.tio ? `TIR > K₀ (${result.tio}%) ✓` : `TIR < K₀ (${result.tio}%) ✗`}
                   </p>
                 </>
               ) : (

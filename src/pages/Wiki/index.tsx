@@ -171,6 +171,26 @@ El impacto: una tasa anticipada del 2% equivale a una tasa vencida del 2.0408% (
     formula: 'iᵥ = iₐ / (1 − iₐ)     |     iₐ = iᵥ / (1 + iᵥ)',
   },
   {
+    id: 'tasas-legales-colombia',
+    category: 'Tasas',
+    title: 'Tasas de interés legales en Colombia',
+    tagline: 'Los límites y referencias que regulan el crédito en el mercado colombiano',
+    body: `En Colombia, la regulación financiera establece límites y tasas de referencia que deben conocer tanto prestamistas como prestatarios.
+
+TASA DE USURA: el límite máximo legal de interés que puede cobrar cualquier entidad o persona en Colombia. La certifica la Superintendencia Financiera cada trimestre. Cobrar por encima de la usura es delito penal (Código Penal, art. 305). Se define como 1.5 veces la tasa de interés bancario corriente.
+
+TASA DE INTERÉS BANCARIO CORRIENTE (IBC): publicada mensualmente por la Superfinanciera. Es la tasa promedio ponderada cobrada por los bancos en créditos de consumo y ordinarios. Es la referencia para calcular la tasa de usura.
+
+IBR (Indicador Bancario de Referencia): tasa a corto plazo que refleja el costo del dinero en el mercado interbancario colombiano. Se publica diariamente en plazos de overnight, 1 mes y 3 meses. Es el índice de referencia para créditos hipotecarios y de libranza.
+
+DTF (Depósito a Término Fijo): tasa promedio de captación de los CDT a 90 días en el sistema financiero. Se calcula semanalmente por el Banco de la República. Históricamente fue la referencia para créditos empresariales, hoy en día es menos usada que el IBR.
+
+TASA REPO (Tasa de Política Monetaria): la tasa a la que el Banco de la República presta o recibe dinero de los bancos comerciales. Es el principal instrumento para controlar la inflación. Su variación impacta directamente todas las tasas del mercado.
+
+IPC + SPREAD: muchos créditos hipotecarios UVR se expresan como IPC + X puntos porcentuales, manteniendo constante la tasa real y protegiendo al banco de la inflación.`,
+    formula: 'Tasa de usura = 1.5 × IBC     |     IBR overnight ≈ Tasa repo del Banco de la República',
+  },
+  {
     id: 'amortizacion',
     category: 'Crédito',
     title: 'Sistemas de Amortización',
@@ -340,8 +360,8 @@ Los flujos de caja incluyen la inversión inicial (negativa), ingresos y egresos
 • VPN < 0 → el proyecto destruye valor → se rechaza
 • Entre alternativas excluyentes → se elige la de mayor VPN
 
-**¿Qué es la TMAR?**
-La Tasa Mínima Atractiva de Retorno es el costo de oportunidad del capital: lo mínimo que debe rendir el dinero para justificar el riesgo. En Colombia puede ser la DTF + spread, el IBR, o el WACC de la empresa.
+**¿Qué es la TMAR (= K₀ = costo de oportunidad)?**
+La Tasa Mínima Atractiva de Retorno (TMAR), también llamada K₀ o costo de oportunidad del capital, es lo mínimo que debe rendir el dinero para justificar el riesgo. En Colombia puede ser la DTF + spread, el IBR, o el WACC de la empresa.
 
 ⚠ Limitación: el VPN depende fuertemente de la TMAR elegida. Una tasa mayor reduce el VPN (los flujos futuros valen menos hoy). Por eso, cambiar la TMAR puede invertir la decisión entre alternativas.`,
     formula: 'VPN = Σ [FCₜ / (1 + i)ᵗ]     t = 0, 1, 2, ..., n',
@@ -567,6 +587,32 @@ export default function WikiPage() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Bibliografía */}
+      <div className="mt-10 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+        <p
+          className="text-xs mono uppercase tracking-widest mb-4"
+          style={{ color: 'var(--muted)' }}
+        >
+          Bibliografía y fuentes
+        </p>
+        <div className="space-y-2 text-xs" style={{ color: 'var(--muted)', lineHeight: 1.8 }}>
+          {[
+            ['Blank, L. & Tarquin, A.', 'Ingeniería Económica', 'McGraw-Hill, 8.ª edición.'],
+            ['Meza Orozco, J. J.', 'Matemáticas Financieras Aplicadas', 'ECOE Ediciones, 5.ª edición.'],
+            ['Vélez Pareja, I.', 'Decisiones de Inversión', 'Editorial Javegraf, Universidad Javeriana.'],
+            ['Superintendencia Financiera de Colombia', 'Tasas de interés de referencia y usura', 'superfinanciera.gov.co'],
+            ['Banco de la República de Colombia', 'Tasas de interés, IBR y política monetaria', 'banrep.gov.co'],
+            ['DANE', 'Índice de Precios al Consumidor (IPC)', 'dane.gov.co'],
+          ].map(([autor, titulo, fuente]) => (
+            <p key={autor}>
+              <span style={{ color: 'var(--accent)', marginRight: 6 }}>▸</span>
+              <strong style={{ color: 'var(--text)' }}>{autor}</strong> —{' '}
+              <em>{titulo}</em>. {fuente}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   )

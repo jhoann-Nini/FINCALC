@@ -2,10 +2,11 @@ import { create } from 'zustand'
 
 // Datos que un módulo "pasa" al siguiente (o anterior) para continuar el ejercicio.
 export interface CarryPayload {
-  rate?: number // tasa en %
-  amount?: number // monto / capital en $
-  periods?: number // número de períodos
-  from?: string // ruta del módulo de origen
+  rate?: number      // tasa en %
+  amount?: number    // monto / capital en $
+  periods?: number   // número de períodos
+  from?: string      // ruta del módulo de origen
+  rateLabel?: string // nombre descriptivo de la tasa (ej: "Mensual MV: 2.0000%")
 }
 
 // Orden didáctico de los módulos (define qué es "anterior" y "siguiente").

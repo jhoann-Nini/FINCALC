@@ -228,8 +228,11 @@ export default function CompoundInterestPage() {
     n: SLIDER.n.init,
   })
 
+  const [carriedLabel, setCarriedLabel] = useState<string | null>(null)
+
   const carried = useCarryReceive((p) => {
     setUiMode('experto')
+    if (p.rateLabel) setCarriedLabel(p.rateLabel)
     const np = p.amount != null ? String(Math.round(p.amount)) : P
     const ni = p.rate != null ? String(+p.rate.toFixed(6)) : iPct
     const nn = p.periods != null ? String(Math.round(p.periods)) : n
@@ -341,7 +344,7 @@ export default function CompoundInterestPage() {
       'Interés Simple': Math.round(s.interestSimple),
     })) ?? []
 
-  const rateLabel = `Tasa efectiva ${PERIOD_RATE_LABEL[period]} (i)`
+  const rateLabel = `Tasa de interés ${PERIOD_RATE_LABEL[period]} (i)`
   const nLabel = `Número de ${PERIOD_N_LABEL[period]} n`
   const nUnit = PERIOD_N_LABEL[period]
 
@@ -419,7 +422,9 @@ export default function CompoundInterestPage() {
 
       {carried && (
         <Callout color="accent">
-          📥 Trajimos los datos del módulo anterior y los calculamos por ti. Puedes ajustarlos.
+          {carriedLabel
+            ? `📥 Tasa cargada desde Conversión de Tasas: ${carriedLabel}. Ajusta los demás datos y calcula.`
+            : '📥 Trajimos los datos del módulo anterior y los calculamos por ti. Puedes ajustarlos.'}
         </Callout>
       )}
 
@@ -784,12 +789,12 @@ export default function CompoundInterestPage() {
           interés compuesto &quot;la octava maravilla del mundo&quot;.
         </p>
         <h3 className="display text-lg font-semibold" style={{ color: 'var(--text)' }}>
-          Tasa efectiva por período
+          Tasa de interés por período
         </h3>
         <p>
           La tasa <strong style={{ color: 'var(--text)' }}>i</strong> en la fórmula de interés
           compuesto debe ser la tasa
-          <em> efectiva del período de capitalización</em>. Si el préstamo capitaliza mensualmente,
+          <em> del período de capitalización</em>. Si el préstamo capitaliza mensualmente,
           i debe ser mensual. Si capitaliza trimestralmente, i debe ser trimestral. Al cambiar la
           unidad de período, la tasa se convierte automáticamente usando la fórmula de equivalencia:
           i_nueva = (1 + i_original)^(factor) − 1.
