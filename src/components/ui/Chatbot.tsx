@@ -137,8 +137,13 @@ export default function Chatbot() {
       })
 
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string }
-        setApiError(err.error ?? `Error HTTP ${res.status}`)
+        const errData = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+        const friendly: Record<string, string> = {
+          invalid_api_key: '🔑 La clave de API de Groq no es válida o fue revocada. El administrador debe generar una nueva en console.groq.com y actualizar .env.local.',
+          all_models_unavailable: '⏳ Los servidores de IA están saturados ahora mismo. Intenta de nuevo en unos segundos.',
+          no_api_key: '⚙️ La IA no está configurada en el servidor. Falta GROQ_API_KEY en .env.local.',
+        }
+        setApiError(friendly[errData.error ?? ''] ?? errData.message ?? `Error ${res.status}`)
         setMessages((prev) => prev.slice(0, -1))
         return
       }

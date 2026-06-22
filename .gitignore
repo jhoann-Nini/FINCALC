@@ -2,8 +2,9 @@
 dist/
 dist-ssr/
 
-# Environment variables
+# Environment variables — NUNCA subir claves al repositorio
 .env
+.env.local
 .env.*.local
 
 # Logs

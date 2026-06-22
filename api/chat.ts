@@ -136,50 +136,68 @@ export default async function handler(req: any, res: any) {
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    res.status(500).json({ error: 'API key not configured on server' })
+    res.status(500).json({ error: 'no_api_key', message: 'La IA no está configurada. Falta GROQ_API_KEY en .env.local.' })
     return
   }
 
-  try {
-    // Construir historial de conversación (máx últimos 10 turnos)
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...history.slice(-10).map(({ role, content }: { role: string; content: string }) => ({
-        role: role === 'user' ? 'user' : 'assistant',
-        content,
-      })),
-      { role: 'user', content: message.trim() },
-    ]
+  const chatMessages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...history.slice(-10).map(({ role, content }: { role: string; content: string }) => ({
+      role: role === 'user' ? 'user' : 'assistant',
+      content,
+    })),
+    { role: 'user', content: message.trim() },
+  ]
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages,
-        temperature: 0.2,
-        max_tokens: 900,
-      }),
-    })
+  // Intentar con cada modelo en orden — si uno falla o está saturado, pasa al siguiente
+  const MODELS = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'gemma2-9b-it',
+  ]
 
-    if (!groqRes.ok) {
-      const errText = await groqRes.text()
-      console.error('Groq STATUS:', groqRes.status)
-      console.error('Groq DETAIL:', errText)
-      res.status(502).json({ error: 'Groq API error', detail: errText })
+  for (const model of MODELS) {
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model, messages: chatMessages, temperature: 0.2, max_tokens: 900 }),
+      })
+
+      if (groqRes.status === 401) {
+        res.status(401).json({
+          error: 'invalid_api_key',
+          message: 'La clave de API de Groq es inválida o fue revocada. Ve a console.groq.com, genera una nueva y actualiza .env.local.',
+        })
+        return
+      }
+
+      if (groqRes.status === 429) {
+        console.warn(`[${model}] Rate limit alcanzado, probando siguiente modelo...`)
+        continue
+      }
+
+      if (!groqRes.ok) {
+        const errText = await groqRes.text()
+        console.error(`[${model}] Error ${groqRes.status}:`, errText)
+        continue
+      }
+
+      const data = await groqRes.json()
+      const reply = data.choices?.[0]?.message?.content ?? 'Sin respuesta. Intenta de nuevo.'
+      res.json({ reply })
       return
+    } catch (err: any) {
+      console.error(`[${model}] Error de red:`, err?.message)
+      continue
     }
-
-    const data = await groqRes.json()
-    const reply =
-      data.choices?.[0]?.message?.content ??
-      'No pude generar una respuesta. Intentá de nuevo.'
-
-    res.json({ reply })
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? 'Internal server error' })
   }
+
+  res.status(503).json({
+    error: 'all_models_unavailable',
+    message: 'Todos los modelos de IA están temporalmente saturados. Intenta de nuevo en unos segundos.',
+  })
 }
