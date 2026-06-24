@@ -94,6 +94,7 @@ export function Field({
           placeholder={placeholder}
           disabled={disabled}
           min={isMoney ? undefined : 0}
+          step={isMoney ? undefined : "any"}   // ← línea nueva
           style={disabled ? { opacity: 0.45, cursor: 'not-allowed' } : {}}
         />
         {unit && (
