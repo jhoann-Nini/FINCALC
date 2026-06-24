@@ -213,7 +213,7 @@ export default function AmortizationPage() {
           <p className="text-xs mono uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
             Tipo de tasa ingresada
           </p>
-          <ModeTabs options={RATE_TYPES} value={rateType} onChange={(v) => { setRateType(v); setResult(null) }} />
+          <ModeTabs options={RATE_TYPES} value={rateType} onChange={(v) => { setRateType(v); setIPct(''); setResult(null) }} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
